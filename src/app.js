@@ -23,6 +23,10 @@ function getPage(page) {
 }
 
 function getTweetsFromUser(user) {
+  if (!user) {
+    return [];
+  }
+
   const { username, avatar } = user;
   return tweets
     .filter((tweet) => tweet.username === username)
@@ -31,18 +35,22 @@ function getTweetsFromUser(user) {
 }
 
 app.post("/sign-up", (req, res) => {
-  let { username, avatar } = req.body;
-  username = username ?? "";
-  avatar = avatar ?? "";
+  const { username, avatar } = req.body;
 
-  if (username === "" || avatar === "") {
+  if (
+    typeof username !== "string" ||
+    username === "" ||
+    typeof avatar !== "string" ||
+    avatar === ""
+  ) {
     return res.status(400).send("Todos os campos são obrigatórios!");
   }
 
   const user = users.find((user) => user.username === username);
 
   if (user) {
-    return res.status(409).send("Já existe um usuário com esse username!");
+    user.avatar = avatar;
+    return res.send("OK!");
   }
 
   users.push({ username, avatar });
@@ -50,18 +58,21 @@ app.post("/sign-up", (req, res) => {
 });
 
 app.post("/tweets", (req, res) => {
-  const username = req.headers.user;
+  const { user: username } = req.headers;
+  const { tweet } = req.body;
+
+  if (!username) {
+    return res.status(401).send("UNAUTHORIZED");
+  }
+
+  if (typeof tweet !== "string" || tweet === "") {
+    return res.status(400).send("Todos os campos são obrigatórios!");
+  }
+
   const user = users.find((user) => user.username === username);
 
   if (!user) {
     return res.status(401).send("UNAUTHORIZED");
-  }
-
-  let { tweet } = req.body;
-  tweet = tweet ?? "";
-
-  if (tweet === "") {
-    return res.status(400).send("Todos os campos são obrigatórios!");
   }
 
   tweets.push({ username, tweet });
@@ -87,11 +98,6 @@ app.get("/tweets", (req, res) => {
 app.get("/tweets/:username", (req, res) => {
   const { username } = req.params;
   const user = users.find((user) => user.username === username);
-
-  if (!user) {
-    return res.json([]);
-  }
-
   return res.json(getTweetsFromUser(user));
 });
 
