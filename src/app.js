@@ -88,7 +88,7 @@ app.get("/tweets", (req, res) => {
 
   page = parseInt(page);
 
-  if (page === NaN || page < 1) {
+  if (Number.isNaN(page) || page < 1) {
     return res.status(400).send("Informe uma página válida!");
   }
 
